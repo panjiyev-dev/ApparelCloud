@@ -9,7 +9,7 @@ jobs:
 deploy:
 runs-on: ubuntu-latest
 
-```
+
 steps:
   - name: Deploy to VPS
     uses: appleboy/ssh-action@v1.2.0
@@ -20,4 +20,4 @@ steps:
       script: |
         cd ~/ApparelCloud
         ./deploy.sh
-```
+
