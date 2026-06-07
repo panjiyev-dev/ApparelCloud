@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Cloud, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, CheckCircle2, Zap, ShieldCheck, BarChart3 } from 'lucide-react';
 import { formatApiError } from '../lib/errors';
 
 interface LoginProps {
   onLoginSuccess: (token: string, user: unknown) => void;
 }
+
+const features = [
+  { icon: Zap,           text: "Real vaqtda ombor boshqaruvi (WMS)" },
+  { icon: CheckCircle2,  text: "B2B buyurtmalar va CRM tizimi" },
+  { icon: ShieldCheck,   text: "Ta'minotchilar boshqaruvi (SRM)" },
+  { icon: BarChart3,     text: "Tahlil va savdo hisobotlari" },
+];
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('admin@apparelcloud.com');
@@ -18,29 +25,22 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-
     try {
       const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
       const params = new URLSearchParams();
       params.append('username', email);
       params.append('password', password);
-
       const response = await axios.post(`${baseUrl}/api/auth/login`, params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
-
       const { access_token, user } = response.data;
       onLoginSuccess(access_token, user);
     } catch (err: unknown) {
-      console.error(err);
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status === 401) {
         setError("Email yoki parol noto'g'ri.");
       } else {
-        setError(formatApiError(err, 'Autentifikatsiya serveriga ulanib bo‘lmadi.'));
+        setError(formatApiError(err, "Autentifikatsiya serveriga ulanib bo'lmadi."));
       }
     } finally {
       setIsLoading(false);
@@ -48,99 +48,250 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 bg-gradient-to-b from-[#0a0a0a] to-[#151515]">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(214,175,55,0.05),transparent_50%)] pointer-events-none" />
+    <div className="min-h-screen flex overflow-hidden bg-navy-900">
 
-      <div className="w-full max-w-md border border-white/10 rounded-2xl bg-black/40 glass-card p-8 shadow-gold-lg relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-gold-500 to-transparent" />
+      {/* ── Left brand panel ──────────────────────────────── */}
+      <div className="hidden lg:flex lg:w-[46%] xl:w-[42%] relative flex-col justify-between p-12 overflow-hidden">
 
-        <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 text-black shadow-gold font-bold mb-4">
-            <Cloud size={24} className="text-black" />
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight text-white">ApparelCloud</h2>
-          <p className="text-xs text-gray-400 mt-1.5 text-center">
-            Ombor, mijozlar, ta&apos;minotchilar va buyurtmalarni boshqarish
-          </p>
+        {/* Ambient orbs */}
+        <div className="pointer-events-none absolute inset-0">
+          <div
+            className="absolute -top-24 -left-24 w-[480px] h-[480px] rounded-full opacity-20 animate-orb"
+            style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.6) 0%, transparent 70%)', animationDelay: '0s' }}
+          />
+          <div
+            className="absolute top-1/2 -right-32 w-[360px] h-[360px] rounded-full opacity-15 animate-orb"
+            style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.5) 0%, transparent 70%)', animationDelay: '3s' }}
+          />
+          <div
+            className="absolute -bottom-32 left-1/4 w-[320px] h-[320px] rounded-full opacity-10 animate-orb"
+            style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.5) 0%, transparent 70%)', animationDelay: '6s' }}
+          />
+          {/* Dot grid */}
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage: 'radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+            }}
+          />
         </div>
 
-        {error && (
-          <div className="mb-5 p-3 rounded-lg border border-red-500/20 bg-red-500/10 text-xs font-semibold text-red-400">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-              Email manzil
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                <Mail size={16} />
-              </div>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="siz@kompaniya.uz"
-                className="w-full h-11 pl-10 pr-4 rounded-lg bg-white/5 border border-white/10 focus:border-gold-500/50 text-sm text-white placeholder-gray-500 outline-none transition-all"
-              />
+        {/* Content */}
+        <div className="relative z-10">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-16">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black text-black"
+              style={{ background: 'linear-gradient(135deg, #D4AF37, #b48a20)' }}
+            >
+              👑
             </div>
+            <span className="text-lg font-bold tracking-wide text-white">ApparelCloud</span>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-              Parol
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                <Lock size={16} />
-              </div>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full h-11 pl-10 pr-12 rounded-lg bg-white/5 border border-white/10 focus:border-gold-500/50 text-sm text-white placeholder-gray-500 outline-none transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-white"
+          {/* Headline */}
+          <h1 className="text-4xl xl:text-5xl font-black leading-tight mb-5">
+            <span className="text-white">Ulgurji kiyim</span>
+            <br />
+            <span className="text-gold-gradient">biznesini boshqar.</span>
+          </h1>
+          <p className="text-slate-400 text-base leading-relaxed max-w-sm">
+            ERP, CRM, WMS va SRM — barchasini bitta platformada, real vaqtda.
+          </p>
+
+          {/* Features */}
+          <ul className="mt-10 space-y-4">
+            {features.map(({ icon: Icon, text }, i) => (
+              <li
+                key={i}
+                className="flex items-center gap-3.5 animate-fade-up"
+                style={{ animationDelay: `${i * 0.08}s` }}
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.2)' }}
+                >
+                  <Icon size={15} className="text-gold-400" />
+                </div>
+                <span className="text-slate-300 text-sm font-medium">{text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Bottom quote */}
+        <div className="relative z-10">
+          <div
+            className="rounded-2xl p-5"
+            style={{ background: 'rgba(14,20,32,0.6)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(16px)' }}
+          >
+            <p className="text-slate-300 text-sm italic leading-relaxed">
+              "ApparelCloud bizning ulgurji operatsiyalarimizni butunlay o'zgartirdi — buyurtmalarni kuzatish endi bir lahzalik ish."
+            </p>
+            <div className="mt-3 flex items-center gap-2.5">
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-black"
+                style={{ background: 'linear-gradient(135deg,#D4AF37,#b48a20)' }}
+              >
+                A
+              </div>
+              <div>
+                <p className="text-white text-xs font-semibold">Admin Foydalanuvchi</p>
+                <p className="text-slate-500 text-[10px]">ApparelCloud Demo</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Right form panel ──────────────────────────────── */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12 relative">
+        {/* Subtle vertical separator (desktop only) */}
+        <div
+          className="hidden lg:block absolute left-0 top-12 bottom-12 w-px"
+          style={{ background: 'linear-gradient(180deg, transparent, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.06) 70%, transparent)' }}
+        />
+
+        <div className="w-full max-w-[400px] animate-fade-up">
+
+          {/* Mobile logo */}
+          <div className="flex lg:hidden items-center gap-3 mb-10">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-black"
+              style={{ background: 'linear-gradient(135deg,#D4AF37,#b48a20)' }}
+            >
+              👑
+            </div>
+            <span className="text-lg font-bold text-white">ApparelCloud</span>
+          </div>
+
+          {/* Heading */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-1.5">Tizimga kirish</h2>
+            <p className="text-slate-400 text-sm">Hisobingizga kirish uchun ma'lumotlarni kiriting</p>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div
+              className="mb-6 flex items-start gap-3 rounded-xl p-4 text-sm"
+              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
+            >
+              <div className="w-4 h-4 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-red-400 text-[10px] font-bold">!</span>
+              </div>
+              <p className="text-red-400 font-medium">{error}</p>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Email */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">
+                Email manzil
+              </label>
+              <div className="relative">
+                <Mail size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="siz@kompaniya.uz"
+                  className="form-input pl-11"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">
+                Parol
+              </label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••••"
+                  className="form-input pl-11 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="btn-primary w-full h-12 mt-2 text-base font-bold"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              ) : (
+                'Tizimga kirish'
+              )}
+            </button>
+          </form>
+
+          {/* Demo credentials */}
+          <div
+            className="mt-8 rounded-xl p-4"
+            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+          >
+            <p className="text-slate-500 text-[11px] font-semibold uppercase tracking-wider mb-3">Demo hisoblar</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500">Administrator</span>
+                <div className="flex items-center gap-2 font-mono">
+                  <span
+                    className="px-2 py-0.5 rounded text-slate-300"
+                    style={{ background: 'rgba(255,255,255,0.05)' }}
+                  >
+                    admin@apparelcloud.com
+                  </span>
+                  <span
+                    className="px-2 py-0.5 rounded text-slate-300"
+                    style={{ background: 'rgba(255,255,255,0.05)' }}
+                  >
+                    admin123
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500">Xodim</span>
+                <div className="flex items-center gap-2 font-mono">
+                  <span
+                    className="px-2 py-0.5 rounded text-slate-300"
+                    style={{ background: 'rgba(255,255,255,0.05)' }}
+                  >
+                    staff@apparelcloud.com
+                  </span>
+                  <span
+                    className="px-2 py-0.5 rounded text-slate-300"
+                    style={{ background: 'rgba(255,255,255,0.05)' }}
+                  >
+                    staffpassword
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="flex items-center justify-center w-full h-11 rounded-lg bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 text-black font-bold text-sm tracking-wide shadow-gold hover:shadow-gold-lg disabled:opacity-50 transition-all cursor-pointer"
-          >
-            {isLoading ? (
-              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-            ) : (
-              'Tizimga kirish'
-            )}
-          </button>
-        </form>
-
-        <div className="mt-8 pt-6 border-t border-white/5 text-center text-[10px] text-gray-500">
-          <p>Standart hisoblar:</p>
-          <div className="flex flex-col justify-center gap-1 mt-2">
-            <span>
-              Admin: <strong className="text-gray-400">admin@apparelcloud.com</strong> /{' '}
-              <strong className="text-gray-400">admin123</strong>
-            </span>
-            <span>
-              Xodim: <strong className="text-gray-400">staff@apparelcloud.com</strong> /{' '}
-              <strong className="text-gray-400">staffpassword</strong>
-            </span>
-          </div>
+          <p className="text-center text-slate-600 text-[11px] mt-8">
+            © 2025 ApparelCloud · Kiyim sohasining aqlli ERP tizimi
+          </p>
         </div>
       </div>
     </div>

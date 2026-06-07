@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, AlertTriangle, X } from 'lucide-react';
+import { Plus, Search, Filter, AlertTriangle, X, Package } from 'lucide-react';
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useSuppliers } from '../hooks/useApi';
 import ProductsTable from '../components/ProductsTable';
 import { Product } from '../types';
@@ -16,31 +16,17 @@ const Inventory: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 400);
-    return () => clearTimeout(handler);
+    const t = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 400);
+    return () => clearTimeout(t);
   }, [search]);
 
   const { data: suppliers } = useSuppliers();
-
-  // Fetch products
   const limit = 10;
-  const { data, isLoading } = useProducts({
-    page,
-    limit,
-    category,
-    stockStatus,
-    search: debouncedSearch,
-  });
-
-  // Mutators
+  const { data, isLoading } = useProducts({ page, limit, category, stockStatus, search: debouncedSearch });
   const createProductMutation = useCreateProduct();
   const updateProductMutation = useUpdateProduct();
   const deleteProductMutation = useDeleteProduct();
 
-  // Form states
   const [formSku, setFormSku] = useState('');
   const [formName, setFormName] = useState('');
   const [formCategory, setFormCategory] = useState("Men's");
@@ -53,54 +39,33 @@ const Inventory: React.FC = () => {
   const openAddModal = () => {
     setEditingProduct(null);
     setFormSku(`WH-${Math.floor(1000 + Math.random() * 9000)}`);
-    setFormName('');
-    setFormCategory("Men's");
-    setFormPrice(25.0);
-    setFormStock(50);
-    setFormMinStock(10);
+    setFormName(''); setFormCategory("Men's"); setFormPrice(25); setFormStock(50); setFormMinStock(10);
     setFormSupplier(suppliers?.[0]?.code || '');
-    setFormError(null);
-    setIsModalOpen(true);
+    setFormError(null); setIsModalOpen(true);
   };
 
-  const openEditModal = (product: Product) => {
-    setEditingProduct(product);
-    setFormSku(product.sku);
-    setFormName(product.name);
-    setFormCategory(product.category);
-    setFormPrice(product.price);
-    setFormStock(product.stock_quantity);
-    setFormMinStock(product.min_stock_level);
-    setFormSupplier(product.supplier_id || '');
-    setFormError(null);
-    setIsModalOpen(true);
+  const openEditModal = (p: Product) => {
+    setEditingProduct(p);
+    setFormSku(p.sku); setFormName(p.name); setFormCategory(p.category);
+    setFormPrice(p.price); setFormStock(p.stock_quantity); setFormMinStock(p.min_stock_level);
+    setFormSupplier(p.supplier_id || '');
+    setFormError(null); setIsModalOpen(true);
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
-
     const payload = {
-      sku: formSku,
-      name: formName,
-      category: formCategory,
-      price: Number(formPrice),
-      stock_quantity: Number(formStock),
-      min_stock_level: Number(formMinStock),
-      supplier_id: formSupplier || null,
+      sku: formSku, name: formName, category: formCategory,
+      price: Number(formPrice), stock_quantity: Number(formStock),
+      min_stock_level: Number(formMinStock), supplier_id: formSupplier || null,
     };
-
     if (payload.price <= 0 || payload.stock_quantity < 0 || payload.min_stock_level < 0) {
-      setFormError("Noto'g'ri raqamlar. Narx 0 dan katta, miqdorlar 0 dan katta yoki teng bo'lishi kerak.");
-      return;
+      setFormError("Noto'g'ri raqamlar."); return;
     }
-
     try {
       if (editingProduct) {
-        await updateProductMutation.mutateAsync({
-          id: editingProduct.id,
-          data: payload,
-        });
+        await updateProductMutation.mutateAsync({ id: editingProduct.id, data: payload });
       } else {
         await createProductMutation.mutateAsync(payload);
       }
@@ -111,155 +76,143 @@ const Inventory: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      await deleteProductMutation.mutateAsync(id);
-    } catch (err: any) {
-      alert(formatApiError(err, "Mahsulotni o'chirib bo'lmadi."));
-    }
-  };
-
-  // Filter handlers
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCategory(e.target.value);
-    setPage(1);
-  };
-
-  const handleStockChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setStockStatus(e.target.value);
-    setPage(1);
+    try { await deleteProductMutation.mutateAsync(id); }
+    catch (err: any) { alert(formatApiError(err, "Mahsulotni o'chirib bo'lmadi.")); }
   };
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
+  const hasLowStock = data?.items.some(p => p.stock_quantity <= p.min_stock_level);
+
+  const inputStyle = {
+    width: '100%', borderRadius: '12px', padding: '10px 14px',
+    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+    color: '#f1f5f9', fontSize: '14px', outline: 'none',
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Top Header Row */}
+    <div className="space-y-5 animate-fade-up">
+
+      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Ombor katalogi (WMS)</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Ulgurji ombor, minimal zaxira signallari va mahsulot parametrlari</p>
+          <h1 className="text-2xl font-black text-white">Ombor katalogi</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Zaxira boshqaruvi, minimal signallar va mahsulot parametrlari</p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center justify-center gap-1.5 py-2 px-4 rounded-lg bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 font-bold text-black shadow-gold transition-all"
-        >
-          <Plus size={16} />
-          <span>Yangi mahsulot</span>
+        <button onClick={openAddModal} className="btn-primary text-xs">
+          <Plus size={15} />
+          Yangi mahsulot
         </button>
       </div>
 
-      {/* Low Stock Alerts Banner (If any) */}
-      {data && data.items.some(p => p.stock_quantity <= p.min_stock_level) && (
-        <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-400 animate-pulse-glow">
-          <AlertTriangle size={20} className="mt-0.5 flex-shrink-0" />
+      {/* Low stock alert */}
+      {hasLowStock && (
+        <div className="flex items-start gap-3.5 p-4 rounded-2xl animate-pulse-glow"
+          style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)' }}>
+          <AlertTriangle size={18} className="text-amber-400 mt-0.5 flex-shrink-0" />
           <div>
-            <h4 className="text-sm font-bold">Kam zaxira ogohlantirishi</h4>
-            <p className="text-xs text-gray-300 mt-0.5">Ba&apos;zi mahsulotlar minimal darajadan past. Tez orada to&apos;ldirish buyurtmasi bering.</p>
+            <p className="text-sm font-bold text-amber-400">Kam zaxira ogohlantirishi</p>
+            <p className="text-xs text-slate-400 mt-0.5">Ba'zi mahsulotlar minimal darajadan past. Tez orada buyurtma bering.</p>
           </div>
         </div>
       )}
 
-      {/* Filters & Search Row */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4 bg-black/20 p-4 rounded-xl border border-white/5">
+      {/* Filters */}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4 p-4 rounded-2xl"
+        style={{ background: 'rgba(14,20,32,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}>
         {/* Search */}
         <div className="relative md:col-span-2">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-            <Search size={16} />
-          </div>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nom yoki SKU bo'yicha qidirish..."
-            className="w-full h-10 pl-10 pr-4 rounded-lg bg-white/5 border border-white/10 focus:border-gold-500/50 text-sm text-white placeholder-gray-400 outline-none transition-all"
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Nom yoki SKU bo'yicha..."
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-white placeholder-slate-600 outline-none transition-all"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+            onFocus={e => { e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
           />
         </div>
 
-        {/* Category Filter */}
+        {/* Category */}
         <div className="relative">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-            <Filter size={14} />
-          </div>
-          <select
-            value={category}
-            onChange={handleCategoryChange}
-            className="w-full h-10 pl-10 pr-4 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 outline-none appearance-none cursor-pointer focus:border-gold-500/50"
-          >
-            <option value="" className="bg-[#0a0a0a]">Barcha kategoriyalar</option>
-            <option value="Men's" className="bg-[#0a0a0a]">{CATEGORY_UZ["Men's"]}</option>
-            <option value="Women's" className="bg-[#0a0a0a]">{CATEGORY_UZ["Women's"]}</option>
-            <option value="Kids" className="bg-[#0a0a0a]">{CATEGORY_UZ.Kids}</option>
-            <option value="Accessories" className="bg-[#0a0a0a]">{CATEGORY_UZ.Accessories}</option>
+          <Filter size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+          <select value={category} onChange={e => { setCategory(e.target.value); setPage(1); }}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-slate-300 outline-none appearance-none cursor-pointer"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <option value="" style={{ background: '#0e1420' }}>Barcha kategoriyalar</option>
+            {["Men's","Women's","Kids","Accessories"].map(c => (
+              <option key={c} value={c} style={{ background: '#0e1420' }}>{CATEGORY_UZ[c] || c}</option>
+            ))}
           </select>
         </div>
 
-        {/* Stock Level Filter */}
+        {/* Stock */}
         <div className="relative">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-            <AlertTriangle size={14} />
-          </div>
-          <select
-            value={stockStatus}
-            onChange={handleStockChange}
-            className="w-full h-10 pl-10 pr-4 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 outline-none appearance-none cursor-pointer focus:border-gold-500/50"
-          >
-            <option value="" className="bg-[#0a0a0a]">Barcha zaxira holatlari</option>
-            <option value="low" className="bg-[#0a0a0a]">Kam / tugagan</option>
-            <option value="out_of_stock" className="bg-[#0a0a0a]">Tugagan</option>
-            <option value="normal" className="bg-[#0a0a0a]">Normal</option>
+          <AlertTriangle size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+          <select value={stockStatus} onChange={e => { setStockStatus(e.target.value); setPage(1); }}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-slate-300 outline-none appearance-none cursor-pointer"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <option value="" style={{ background: '#0e1420' }}>Barcha holatlari</option>
+            <option value="low" style={{ background: '#0e1420' }}>Kam / tugagan</option>
+            <option value="out_of_stock" style={{ background: '#0e1420' }}>Tugagan</option>
+            <option value="normal" style={{ background: '#0e1420' }}>Normal</option>
           </select>
         </div>
       </div>
 
-      {/* Main Table */}
-      <ProductsTable
-        products={data?.items}
-        isLoading={isLoading}
-        onEdit={openEditModal}
-        onDelete={handleDelete}
-      />
+      {/* Table */}
+      <ProductsTable products={data?.items} isLoading={isLoading} onEdit={openEditModal} onDelete={handleDelete} />
 
-      {/* Pagination Row */}
+      {/* Pagination */}
       {data && data.total > limit && (
-        <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
-          <span>{((page - 1) * limit) + 1}–{Math.min(page * limit, data.total)} / {data.total} ta</span>
+        <div className="flex items-center justify-between text-xs text-slate-500">
+          <span>{((page-1)*limit)+1}–{Math.min(page*limit, data.total)} / {data.total} ta</span>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="py-1 px-3 rounded bg-white/5 border border-white/10 text-gray-300 disabled:opacity-40 hover:bg-white/10 transition-colors"
-            >
-              Oldingi
+            <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1}
+              className="px-3 py-1.5 rounded-lg font-medium disabled:opacity-30 transition-all"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#94a3b8' }}>
+              ← Oldingi
             </button>
-            <span className="font-semibold text-white">{page} / {totalPages}</span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="py-1 px-3 rounded bg-white/5 border border-white/10 text-gray-300 disabled:opacity-40 hover:bg-white/10 transition-colors"
-            >
-              Keyingi
+            <span className="font-bold text-white px-1">{page}/{totalPages}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages}
+              className="px-3 py-1.5 rounded-lg font-medium disabled:opacity-30 transition-all"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#94a3b8' }}>
+              Keyingi →
             </button>
           </div>
         </div>
       )}
 
-      {/* Add / Edit Product Modal */}
+      {/* ── Add / Edit modal ────────────────────────── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg rounded-xl border border-white/10 bg-[#121212] p-6 shadow-gold animate-in fade-in duration-200">
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 p-1 rounded-md text-gray-400 hover:text-white hover:bg-white/5"
-            >
-              <X size={18} />
-            </button>
-
-            <h3 className="text-lg font-bold text-white mb-4">
-              {editingProduct ? `Tahrirlash: ${editingProduct.name}` : 'Yangi mahsulot'}
-            </h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-lg rounded-2xl p-6 animate-scale-in"
+            style={{ background: '#0e1420', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.2)' }}>
+                  <Package size={16} className="text-gold-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  {editingProduct ? `Tahrirlash: ${editingProduct.name}` : 'Yangi mahsulot'}
+                </h3>
+              </div>
+              <button onClick={() => setIsModalOpen(false)}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)' }}>
+                <X size={15} />
+              </button>
+            </div>
 
             {formError && (
-              <div className="mb-4 p-3 rounded-lg border border-red-500/20 bg-red-500/10 text-xs font-semibold text-red-400">
+              <div className="mb-4 p-3.5 rounded-xl text-xs font-semibold text-red-400"
+                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
                 {formError}
               </div>
             )}
@@ -267,109 +220,54 @@ const Inventory: React.FC = () => {
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1.5">SKU kodi</label>
-                  <input
-                    type="text"
-                    required
-                    value={formSku}
-                    onChange={(e) => setFormSku(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-sm text-white outline-none focus:border-gold-500/50"
-                  />
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1.5">SKU kodi</label>
+                  <input type="text" required value={formSku} onChange={e => setFormSku(e.target.value)} style={inputStyle} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1.5">Kategoriya</label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 outline-none cursor-pointer focus:border-gold-500/50"
-                  >
-                    <option value="Men's">{CATEGORY_UZ["Men's"]}</option>
-                    <option value="Women's">{CATEGORY_UZ["Women's"]}</option>
-                    <option value="Kids">{CATEGORY_UZ.Kids}</option>
-                    <option value="Accessories">{CATEGORY_UZ.Accessories}</option>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1.5">Kategoriya</label>
+                  <select value={formCategory} onChange={e => setFormCategory(e.target.value)} style={inputStyle}>
+                    {["Men's","Women's","Kids","Accessories"].map(c => (
+                      <option key={c} value={c} style={{ background: '#0e1420' }}>{CATEGORY_UZ[c]||c}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1.5">Mahsulot nomi</label>
-                <input
-                  type="text"
-                  required
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="e.g. Vintage Denim Trouser"
-                  className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-sm text-white outline-none focus:border-gold-500/50"
-                />
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1.5">Mahsulot nomi</label>
+                <input type="text" required value={formName} onChange={e => setFormName(e.target.value)}
+                  placeholder="masalan: Vintage Denim Trouser" style={inputStyle} />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1.5">Narx ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(Number(e.target.value))}
-                    className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-sm text-white outline-none focus:border-gold-500/50"
-                  />
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1.5">Narx ($)</label>
+                  <input type="number" step="0.01" required value={formPrice} onChange={e => setFormPrice(Number(e.target.value))} style={inputStyle} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1.5">Ombordagi miqdor</label>
-                  <input
-                    type="number"
-                    required
-                    value={formStock}
-                    onChange={(e) => setFormStock(Number(e.target.value))}
-                    className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-sm text-white outline-none focus:border-gold-500/50"
-                  />
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1.5">Ombor miqdori</label>
+                  <input type="number" required value={formStock} onChange={e => setFormStock(Number(e.target.value))} style={inputStyle} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase text-gray-400 mb-1.5">Minimal zaxira</label>
-                  <input
-                    type="number"
-                    required
-                    value={formMinStock}
-                    onChange={(e) => setFormMinStock(Number(e.target.value))}
-                    className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-sm text-white outline-none focus:border-gold-500/50"
-                  />
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1.5">Min. zaxira</label>
+                  <input type="number" required value={formMinStock} onChange={e => setFormMinStock(Number(e.target.value))} style={inputStyle} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1.5">Ta&apos;minotchi (SRM)</label>
-                <select
-                  value={formSupplier}
-                  onChange={(e) => setFormSupplier(e.target.value)}
-                  className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 outline-none cursor-pointer focus:border-gold-500/50"
-                >
-                  <option value="" className="bg-[#121212]">— Tanlanmagan —</option>
-                  {suppliers?.map((s) => (
-                    <option key={s.id} value={s.code} className="bg-[#121212]">
-                      {s.code} — {s.name}
-                    </option>
-                  ))}
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1.5">Ta'minotchi (SRM)</label>
+                <select value={formSupplier} onChange={e => setFormSupplier(e.target.value)} style={inputStyle}>
+                  <option value="" style={{ background: '#0e1420' }}>— Tanlanmagan —</option>
+                  {suppliers?.map(s => <option key={s.id} value={s.code} style={{ background: '#0e1420' }}>{s.code} — {s.name}</option>)}
                 </select>
-                {(!suppliers || suppliers.length === 0) && (
-                  <p className="text-[10px] text-amber-400 mt-1">
-                    Avval SRM bo&apos;limida ta&apos;minotchi qo&apos;shing.
-                  </p>
+                {(!suppliers?.length) && (
+                  <p className="text-[10px] text-amber-400 mt-1">Avval SRM bo'limida ta'minotchi qo'shing.</p>
                 )}
               </div>
 
-              <div className="pt-4 flex justify-end gap-3 text-sm font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="py-2.5 px-4 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5"
-                >
-                  Bekor qilish
-                </button>
-                <button
-                  type="submit"
-                  className="py-2.5 px-5 rounded-lg bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 text-black shadow-gold"
-                >
+              <div className="flex justify-end gap-2.5 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-ghost text-xs">Bekor</button>
+                <button type="submit" className="btn-primary text-xs">
                   {editingProduct ? 'Saqlash' : 'Yaratish'}
                 </button>
               </div>

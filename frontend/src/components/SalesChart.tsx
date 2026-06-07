@@ -1,7 +1,7 @@
 import React from 'react';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Legend 
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { SalesChartPoint } from '../types';
 
@@ -10,126 +10,166 @@ interface SalesChartProps {
   isLoading: boolean;
 }
 
-const SalesChart: React.FC<SalesChartProps> = ({ data, isLoading }) => {
-  const hasData = data && data.some((p) => p.sales > 0 || p.orders > 0);
-  const formatDateLabel = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-    } catch {
-      return dateStr;
-    }
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  const fmt = (d: string) => {
+    try { return new Date(d).toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric', timeZone: 'UTC' }); }
+    catch { return d; }
   };
-
-  const formatSalesVal = (val: number) => {
-    if (val >= 1000) return `$${(val / 1000).toFixed(1)}k`;
-    return `$${val}`;
-  };
-
-  // Custom tooltips matching the premium dark theme
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-xl border border-white/10 bg-[#121212] p-4 shadow-gold text-xs">
-          <p className="font-semibold text-white mb-2">{formatDateLabel(label)}</p>
-          <p className="text-gold-400 font-medium">
-            Revenue: <span className="font-bold text-white">${payload[0].value.toLocaleString()}</span>
-          </p>
-          <p className="text-gray-400 mt-1 font-medium">
-            Orders count: <span className="font-bold text-white">{payload[1].value}</span>
-          </p>
+  return (
+    <div
+      className="rounded-2xl px-4 py-3 text-xs"
+      style={{ background: '#111927', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+    >
+      <p className="font-semibold text-white mb-2">{fmt(label)}</p>
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#D4AF37' }} />
+          <span className="text-slate-400">Daromad</span>
+          <span className="font-bold text-white ml-auto">${payload[0].value.toLocaleString()}</span>
         </div>
-      );
-    }
-    return null;
+        <div className="flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#6366f1' }} />
+          <span className="text-slate-400">Buyurtmalar</span>
+          <span className="font-bold text-white ml-auto">{payload[1]?.value ?? 0}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SalesChart: React.FC<SalesChartProps> = ({ data, isLoading }) => {
+  const hasData = data?.some(p => p.sales > 0 || p.orders > 0);
+
+  const fmtDate = (d: string) => {
+    try { return new Date(d).toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric', timeZone: 'UTC' }); }
+    catch { return d; }
   };
+  const fmtVal = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`;
+
+  const totalRevenue = data?.reduce((s, p) => s + p.sales, 0) ?? 0;
+  const totalOrders  = data?.reduce((s, p) => s + p.orders, 0) ?? 0;
 
   return (
-    <div className="rounded-xl border border-white/5 bg-black/40 p-5 glass-card">
-      <div className="flex items-center justify-between mb-6">
+    <div
+      className="rounded-2xl p-6 flex flex-col"
+      style={{ background: 'rgba(14,20,32,0.85)', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.4)' }}
+    >
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <h3 className="text-base font-semibold text-white">Daromad va buyurtmalar</h3>
-          <p className="text-xs text-gray-400 mt-0.5">So&apos;nggi 30 kun — faqat haqiqiy buyurtmalar</p>
+          <h3 className="text-base font-bold text-white">Daromad va buyurtmalar</h3>
+          <p className="text-xs text-slate-500 mt-0.5">So&apos;nggi 30 kun dinamikasi</p>
         </div>
-        <div className="flex items-center gap-4 text-xs font-semibold">
-          <span className="flex items-center gap-1.5 text-gold-400">
-            <span className="w-3 h-3 rounded bg-gold-500" />
-            Daromad ($)
-          </span>
-          <span className="flex items-center gap-1.5 text-gray-400">
-            <span className="w-3 h-3 rounded bg-white/30" />
-            Buyurtmalar
-          </span>
+
+        {/* Mini stats */}
+        <div className="flex items-center gap-5">
+          <div className="text-right">
+            <div className="flex items-center gap-1.5 justify-end mb-0.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: '#D4AF37' }} />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Daromad</span>
+            </div>
+            <p className="text-sm font-bold text-white">${totalRevenue.toLocaleString()}</p>
+          </div>
+          <div className="text-right">
+            <div className="flex items-center gap-1.5 justify-end mb-0.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: '#6366f1' }} />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Buyurtmalar</span>
+            </div>
+            <p className="text-sm font-bold text-white">{totalOrders}</p>
+          </div>
         </div>
       </div>
 
-      <div className="h-80 w-full">
+      {/* Chart */}
+      <div className="flex-1 h-72">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full w-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-500" />
+          <div className="flex items-center justify-center h-full gap-3">
+            <div
+              className="w-8 h-8 rounded-full border-2 animate-spin"
+              style={{ borderColor: 'rgba(212,175,55,0.15)', borderTopColor: '#D4AF37' }}
+            />
+            <span className="text-xs text-slate-500">Ma'lumotlar yuklanmoqda...</span>
           </div>
         ) : !hasData ? (
-          <div className="flex items-center justify-center h-full text-sm text-gray-500 text-center px-4">
-            Hali buyurtma yo&apos;q. Birinchi buyurtmani yaratgandan keyin grafik shakllanadi.
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
+                <span className="text-2xl">📊</span>
+              </div>
+              <p className="text-sm text-slate-500">Hali buyurtma mavjud emas</p>
+              <p className="text-xs text-slate-600 mt-1">Birinchi buyurtmadan keyin grafik paydo bo&apos;ladi</p>
+            </div>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={data}
-              margin={{ top: 10, right: 5, left: -20, bottom: 0 }}
-            >
+            <AreaChart data={data} margin={{ top: 10, right: 4, left: -20, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.25}/>
-                  <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.0}/>
+                <linearGradient id="gradSales" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor="#D4AF37" stopOpacity={0.30} />
+                  <stop offset="100%" stopColor="#D4AF37" stopOpacity={0.00} />
                 </linearGradient>
-                <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ffffff" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#ffffff" stopOpacity={0.0}/>
+                <linearGradient id="gradOrders" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor="#6366f1" stopOpacity={0.20} />
+                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0.00} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={formatDateLabel} 
-                stroke="rgba(255, 255, 255, 0.4)" 
-                tick={{ fontSize: 10 }}
-                dy={10}
-                tickLine={false}
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.04)"
+                vertical={false}
               />
-              <YAxis 
+              <XAxis
+                dataKey="date"
+                tickFormatter={fmtDate}
+                stroke="rgba(255,255,255,0)"
+                tick={{ fill: '#475569', fontSize: 10 }}
+                dy={8}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
                 yAxisId="left"
-                tickFormatter={formatSalesVal}
-                stroke="rgba(255, 255, 255, 0.4)" 
-                tick={{ fontSize: 10 }}
+                tickFormatter={fmtVal}
+                stroke="rgba(255,255,255,0)"
+                tick={{ fill: '#475569', fontSize: 10 }}
                 tickLine={false}
+                axisLine={false}
               />
-              <YAxis 
+              <YAxis
                 yAxisId="right"
                 orientation="right"
-                stroke="rgba(255, 255, 255, 0.2)"
-                tick={{ fontSize: 10 }}
+                stroke="rgba(255,255,255,0)"
+                tick={{ fill: '#334155', fontSize: 10 }}
                 tickLine={false}
+                axisLine={false}
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Area 
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.06)', strokeWidth: 1 }} />
+
+              <Area
                 yAxisId="left"
-                type="monotone" 
-                dataKey="sales" 
-                stroke="#D4AF37" 
+                type="monotone"
+                dataKey="sales"
+                stroke="#D4AF37"
                 strokeWidth={2}
-                fillOpacity={1} 
-                fill="url(#colorSales)" 
+                fill="url(#gradSales)"
+                dot={false}
+                activeDot={{ r: 4, fill: '#D4AF37', stroke: '#080c14', strokeWidth: 2 }}
               />
-              <Area 
+              <Area
                 yAxisId="right"
-                type="monotone" 
-                dataKey="orders" 
-                stroke="rgba(255, 255, 255, 0.4)" 
+                type="monotone"
+                dataKey="orders"
+                stroke="#6366f1"
                 strokeWidth={1.5}
-                strokeDasharray="4 4"
-                fillOpacity={1}
-                fill="url(#colorOrders)" 
+                strokeDasharray="4 3"
+                fill="url(#gradOrders)"
+                dot={false}
+                activeDot={{ r: 4, fill: '#6366f1', stroke: '#080c14', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>

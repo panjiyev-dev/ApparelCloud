@@ -8,97 +8,110 @@ interface InventoryChartProps {
   isLoading: boolean;
 }
 
-const COLORS = ['#D4AF37', '#EFEFEF', '#888888', '#444444'];
+const PALETTE = ['#D4AF37', '#6366f1', '#10b981', '#3b82f6'];
+
+const CustomTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div
+      className="rounded-xl px-3 py-2.5 text-xs"
+      style={{ background: '#111927', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+    >
+      <p className="font-semibold text-white mb-1">{payload[0].name}</p>
+      <p style={{ color: payload[0].fill }}>
+        {payload[0].value.toLocaleString()} dona
+      </p>
+    </div>
+  );
+};
 
 const InventoryChart: React.FC<InventoryChartProps> = ({ data, isLoading }) => {
-  const totalItems = data?.reduce((acc, curr) => acc + curr.count, 0) || 0;
-  const hasData = data && data.length > 0 && totalItems > 0;
-
-  // Custom tooltips matching the premium dark theme
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const { name, value } = payload[0];
-      const pct = totalItems > 0 ? ((value / totalItems) * 100).toFixed(1) : 0;
-      return (
-        <div className="rounded-xl border border-white/10 bg-[#121212] p-3 shadow-gold text-xs">
-          <p className="font-semibold text-white mb-1 capitalize">{name}</p>
-          <p className="text-gold-400 font-medium">
-            Miqdor: <span className="font-bold text-white">{value.toLocaleString()} dona</span>
-          </p>
-          <p className="text-gray-400 mt-0.5">
-            Ulushi: <span className="font-bold text-white">{pct}%</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const total = data?.reduce((s, d) => s + d.count, 0) ?? 0;
+  const hasData = !!data?.length && total > 0;
 
   return (
-    <div className="rounded-xl border border-white/5 bg-black/40 p-5 glass-card flex flex-col h-full">
-      <div>
-        <h3 className="text-base font-semibold text-white">Ombor taqsimoti</h3>
-        <p className="text-xs text-gray-400 mt-0.5">Kategoriya bo&apos;yicha zaxira</p>
+    <div
+      className="rounded-2xl p-6 flex flex-col h-full"
+      style={{ background: 'rgba(14,20,32,0.85)', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.4)' }}
+    >
+      <div className="mb-4">
+        <h3 className="text-base font-bold text-white">Ombor taqsimoti</h3>
+        <p className="text-xs text-slate-500 mt-0.5">Kategoriya bo&apos;yicha zaxira</p>
       </div>
 
-      <div className="relative flex-1 min-h-[200px] mt-4 flex items-center justify-center">
+      {/* Donut chart */}
+      <div className="relative flex items-center justify-center" style={{ height: 200 }}>
         {isLoading ? (
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-500" />
+          <div
+            className="w-10 h-10 rounded-full border-2 animate-spin"
+            style={{ borderColor: 'rgba(212,175,55,0.15)', borderTopColor: '#D4AF37' }}
+          />
         ) : !hasData ? (
-          <p className="text-sm text-gray-500 text-center px-4">
-            Omborda mahsulot yo&apos;q. Ombor bo&apos;limida mahsulot qo&apos;shing.
-          </p>
+          <div className="text-center">
+            <p className="text-sm text-slate-500">Mahsulot yo&apos;q</p>
+            <p className="text-xs text-slate-600 mt-1">Ombor bo&apos;limida qo&apos;shing</p>
+          </div>
         ) : (
           <>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Tooltip content={<CustomTooltip />} />
                 <Pie
                   data={data}
                   cx="50%"
                   cy="50%"
-                  innerRadius={65}
-                  outerRadius={85}
-                  paddingAngle={4}
+                  innerRadius={62}
+                  outerRadius={82}
+                  paddingAngle={3}
                   dataKey="count"
                   nameKey="category"
+                  strokeWidth={0}
                 >
-                  {data?.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(10,10,10,0.8)" strokeWidth={2} />
+                  {data?.map((_, i) => (
+                    <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
                   ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
-
-            {/* Total Label in Center */}
-            <div className="absolute flex flex-col items-center justify-center">
-              <span className="text-xs text-gray-400 font-medium tracking-wide">Jami zaxira</span>
-              <span className="text-xl font-bold text-white tracking-tight mt-0.5">
-                {totalItems.toLocaleString()}
-              </span>
+            {/* Center label */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Jami</span>
+              <span className="text-2xl font-black text-white mt-0.5">{total.toLocaleString()}</span>
+              <span className="text-[10px] text-slate-500">dona</span>
             </div>
           </>
         )}
       </div>
 
-      {/* Legend Row */}
-      <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-        {data?.map((entry, index) => {
-          const pct = totalItems > 0 ? ((entry.count / totalItems) * 100).toFixed(0) : 0;
-          return (
-            <div key={entry.category} className="flex items-center gap-2">
-              <span 
-                className="w-2.5 h-2.5 rounded"
-                style={{ backgroundColor: COLORS[index % COLORS.length] }}
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-white truncate font-medium">{CATEGORY_UZ[entry.category] || entry.category}</p>
-                <p className="text-[10px] text-gray-400 truncate">{entry.count.toLocaleString()} dona ({pct}%)</p>
+      {/* Legend bars */}
+      {hasData && (
+        <div className="mt-5 space-y-2.5">
+          {data?.map((entry, i) => {
+            const pct = total > 0 ? (entry.count / total) * 100 : 0;
+            const color = PALETTE[i % PALETTE.length];
+            return (
+              <div key={entry.category}>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
+                    <span className="text-slate-300 font-medium">{CATEGORY_UZ[entry.category] || entry.category}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="text-slate-500">{entry.count.toLocaleString()}</span>
+                    <span className="font-bold" style={{ color }}>{pct.toFixed(0)}%</span>
+                  </div>
+                </div>
+                <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${pct}%`, background: color, opacity: 0.8 }}
+                  />
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

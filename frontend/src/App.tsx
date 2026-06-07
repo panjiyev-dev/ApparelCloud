@@ -16,10 +16,7 @@ import { applyPreferences, loadPreferences } from './lib/preferences';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
+    queries: { refetchOnWindowFocus: false, retry: 1 },
   },
 });
 
@@ -29,25 +26,16 @@ const AppContent: React.FC = () => {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => {
-    applyPreferences(loadPreferences());
-  }, []);
+  useEffect(() => { applyPreferences(loadPreferences()); }, []);
 
-  // Load user profile on mount or token changes
   useEffect(() => {
-    const loadUserProfile = async () => {
-      if (!token) {
-        setUser(null);
-        setIsLoadingUser(false);
-        return;
-      }
-
+    const load = async () => {
+      if (!token) { setUser(null); setIsLoadingUser(false); return; }
       setIsLoadingUser(true);
       try {
         const res = await api.get('/api/auth/me');
         setUser(res.data);
-      } catch (err) {
-        console.error('Failed to load user profile, purging token', err);
+      } catch {
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
@@ -55,8 +43,7 @@ const AppContent: React.FC = () => {
         setIsLoadingUser(false);
       }
     };
-
-    loadUserProfile();
+    load();
   }, [token]);
 
   const handleLoginSuccess = (newToken: string, loggedUser: any) => {
@@ -73,9 +60,14 @@ const AppContent: React.FC = () => {
 
   if (isLoadingUser && token) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-3 bg-[#0a0a0a]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gold-500" />
-        <span className="text-xs text-gray-400 font-semibold tracking-wider uppercase">Tizimga ulanmoqda...</span>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4" style={{ background: '#080c14' }}>
+        <div
+          className="w-12 h-12 rounded-full border-2 animate-spin"
+          style={{ borderColor: 'rgba(212,175,55,0.15)', borderTopColor: '#D4AF37' }}
+        />
+        <p className="text-xs font-semibold uppercase tracking-widest text-slate-600">
+          Tizimga ulanmoqda...
+        </p>
       </div>
     );
   }
@@ -85,35 +77,22 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex">
-      {/* Sidebar Navigation */}
-      <Sidebar 
-        isOpen={sidebarOpen} 
-        setIsOpen={setSidebarOpen} 
-        user={user} 
-        onLogout={handleLogout} 
-      />
+    <div className="min-h-screen flex" style={{ background: '#080c14' }}>
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} user={user} onLogout={handleLogout} />
 
-      {/* Main Workspace */}
       <div className="flex-1 flex flex-col lg:pl-64 min-w-0">
-        {/* Top Header */}
-        <Header 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          user={user} 
-          onLogout={handleLogout} 
-        />
+        <Header onMenuToggle={() => setSidebarOpen(v => !v)} user={user} onLogout={handleLogout} />
 
-        {/* Page Container */}
         <main className="flex-1 p-6 overflow-y-auto max-w-7xl w-full mx-auto">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/clients" element={<Clients />} />
-            <Route path="/suppliers" element={<Suppliers />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/settings" element={<Settings user={user} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/"           element={<Dashboard />} />
+            <Route path="/inventory"  element={<Inventory />} />
+            <Route path="/orders"     element={<Orders />} />
+            <Route path="/clients"    element={<Clients />} />
+            <Route path="/suppliers"  element={<Suppliers />} />
+            <Route path="/analytics"  element={<Analytics />} />
+            <Route path="/settings"   element={<Settings user={user} />} />
+            <Route path="*"           element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
@@ -121,14 +100,12 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
-};
+const App: React.FC = () => (
+  <QueryClientProvider client={queryClient}>
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  </QueryClientProvider>
+);
 
 export default App;

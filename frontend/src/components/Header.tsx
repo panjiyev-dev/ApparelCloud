@@ -10,153 +10,243 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
+const breadcrumbMap: Record<string, string> = {
+  inventory:  'Ombor (WMS)',
+  orders:     'Buyurtmalar',
+  clients:    'Mijozlar',
+  suppliers:  "Ta'minotchilar",
+  analytics:  'Statistika',
+  settings:   'Sozlamalar',
+};
+
 const Header: React.FC<HeaderProps> = ({ onMenuToggle, user, onLogout }) => {
   const location = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
 
-  // Breadcrumbs calculation
-  const pathnames = location.pathname.split('/').filter((x) => x);
-  const breadcrumbMap: Record<string, string> = {
-    inventory: 'Ombor (WMS)',
-    orders: 'Buyurtmalar (CRM)',
-    clients: 'Mijozlar (CRM)',
-    suppliers: "Ta'minotchilar (SRM)",
-    analytics: 'Tahlil',
-    settings: 'Sozlamalar',
-  };
+  const pathnames = location.pathname.split('/').filter(Boolean);
 
   const focusSearch = () => searchInputRef.current?.focus();
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         focusSearch();
       }
     };
-    const handleFocusEvent = () => focusSearch();
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener(FOCUS_SEARCH_EVENT, handleFocusEvent);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener(FOCUS_SEARCH_EVENT, focusSearch);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener(FOCUS_SEARCH_EVENT, handleFocusEvent);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener(FOCUS_SEARCH_EVENT, focusSearch);
     };
   }, []);
 
-  // Close dropdown on click outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setProfileDropdownOpen(false);
-      }
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setProfileOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  const initials = user
+    ? user.full_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+    : '?';
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-6 border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-md">
-      {/* Left side: Hamburger (mobile) + Breadcrumbs */}
-      <div className="flex items-center gap-4">
-        <button 
+    <header
+      className="sticky top-0 z-30 flex items-center justify-between px-5 h-[60px]"
+      style={{
+        background: 'rgba(8,12,20,0.88)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+      }}
+    >
+      {/* ── Left: hamburger + breadcrumb ─────────────── */}
+      <div className="flex items-center gap-3 min-w-0">
+        <button
           onClick={onMenuToggle}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 lg:hidden"
+          className="lg:hidden p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors"
         >
-          <Menu size={22} />
+          <Menu size={18} />
         </button>
 
-        {/* Breadcrumb Navigation */}
-        <nav className="hidden md:flex items-center gap-2 text-sm">
-          <Link to="/" className="text-gray-400 hover:text-gold-400 transition-colors">
+        {/* Breadcrumb */}
+        <nav className="hidden md:flex items-center gap-1.5 text-sm min-w-0">
+          <Link
+            to="/"
+            className="text-slate-500 hover:text-slate-300 font-medium transition-colors whitespace-nowrap"
+          >
             ApparelCloud
           </Link>
-          {pathnames.length > 0 && <ChevronRight size={14} className="text-white/20" />}
-          {pathnames.map((value, index) => {
-            const last = index === pathnames.length - 1;
-            const to = `/${pathnames.slice(0, index + 1).join('/')}`;
-            const label = breadcrumbMap[value] || value.charAt(0).toUpperCase() + value.slice(1);
-
-            return last ? (
-              <span key={to} className="text-gold-400 font-medium capitalize">
-                {label}
-              </span>
-            ) : (
+          {pathnames.map((seg, idx) => {
+            const isLast = idx === pathnames.length - 1;
+            const to = `/${pathnames.slice(0, idx + 1).join('/')}`;
+            const label = breadcrumbMap[seg] || (seg.charAt(0).toUpperCase() + seg.slice(1));
+            return (
               <React.Fragment key={to}>
-                <Link to={to} className="text-gray-400 hover:text-gold-400 transition-colors capitalize">
-                  {label}
-                </Link>
-                <ChevronRight size={14} className="text-white/20" />
+                <ChevronRight size={13} className="text-slate-700 flex-shrink-0" />
+                {isLast ? (
+                  <span className="text-white font-semibold truncate">{label}</span>
+                ) : (
+                  <Link to={to} className="text-slate-500 hover:text-slate-300 transition-colors truncate">
+                    {label}
+                  </Link>
+                )}
               </React.Fragment>
             );
           })}
         </nav>
       </div>
 
-      {/* Right side: Global Search + Notifications + Profile dropdown */}
-      <div className="flex items-center gap-4">
-        {/* Global Search Bar */}
-        <div className="relative hidden sm:block w-60 md:w-72">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-            <Search size={16} />
-          </div>
+      {/* ── Right: search + notif + avatar ───────────── */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+
+        {/* Search */}
+        <div className="relative hidden sm:block">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
           <input
             ref={searchInputRef}
             type="text"
-            placeholder="Qidiruv... (⌘K)"
-            className="w-full h-9 pl-10 pr-12 rounded-lg bg-white/5 hover:bg-white/10 focus:bg-[#121212] border border-white/10 focus:border-gold-500/50 text-sm placeholder-gray-400 text-white outline-none transition-all"
+            placeholder="Qidiruv..."
+            className="h-9 w-52 pl-9 pr-14 rounded-xl text-sm text-white placeholder-slate-600 outline-none transition-all duration-200"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.07)',
+            }}
+            onFocus={e => {
+              e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+            }}
+            onBlur={e => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            }}
           />
-          <kbd className="absolute right-3 top-2 flex h-5 select-none items-center gap-1 rounded border border-white/20 bg-white/5 px-1.5 font-mono text-[10px] font-medium text-gray-400">
-            <span className="text-xs">⌘</span>K
+          <kbd
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-600 select-none"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            ⌘K
           </kbd>
         </div>
 
-        {/* Notification Bell */}
-        <button className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
-          <Bell size={20} />
-          {/* Badge */}
-          <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-gold-500 ring-2 ring-[#0a0a0a] animate-pulse-glow" />
-        </button>
+        {/* Notification bell */}
+        <div className="relative" ref={notifRef}>
+          <button
+            onClick={() => { setNotifOpen(v => !v); setProfileOpen(false); }}
+            className="relative w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:text-white transition-all duration-150"
+            style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)' }}
+          >
+            <Bell size={16} />
+            <span
+              className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full animate-pulse-glow"
+              style={{ background: '#D4AF37', boxShadow: '0 0 6px rgba(212,175,55,0.7)' }}
+            />
+          </button>
 
-        {/* Profile Avatar & Dropdown */}
+          {notifOpen && (
+            <div
+              className="absolute right-0 mt-2 w-80 rounded-2xl p-1 animate-scale-in z-50"
+              style={{ background: '#0e1420', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}
+            >
+              <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <p className="text-sm font-semibold text-white">Bildirishnomalar</p>
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full text-black"
+                  style={{ background: '#D4AF37' }}
+                >
+                  Yangi
+                </span>
+              </div>
+              <div className="py-2 px-2 space-y-1">
+                {[
+                  { title: 'Kam zaxira ogohlantirishi', sub: 'Ba\'zi mahsulotlar tugamoqda', time: '2 daqiqa' },
+                  { title: 'Yangi buyurtma keldi', sub: 'Buyurtma #ORD-2024-001', time: '15 daqiqa' },
+                  { title: 'Hisobot tayyor', sub: 'Oylik savdo hisoboti', time: '1 soat' },
+                ].map((n, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 px-3 py-3 rounded-xl cursor-pointer transition-colors"
+                    style={{ ':hover': { background: 'rgba(255,255,255,0.04)' } }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <div
+                      className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                      style={{ background: i === 0 ? '#ef4444' : '#D4AF37' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-white">{n.title}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 truncate">{n.sub}</p>
+                    </div>
+                    <span className="text-[10px] text-slate-600 flex-shrink-0">{n.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Avatar + dropdown */}
         {user && (
           <div className="relative" ref={dropdownRef}>
             <button
-              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-              className="flex items-center gap-2 p-1 rounded-full border border-white/10 hover:border-gold-500/50 transition-colors outline-none"
+              onClick={() => { setProfileOpen(v => !v); setNotifOpen(false); }}
+              className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-xl transition-all duration-150"
+              style={{
+                border: profileOpen ? '1px solid rgba(212,175,55,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                background: 'rgba(255,255,255,0.03)',
+              }}
             >
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gold-500/20 text-gold-400 font-bold text-sm uppercase">
-                {user.full_name.charAt(0)}
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-black flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg,#D4AF37,#b48a20)' }}
+              >
+                {initials}
+              </div>
+              <div className="hidden md:block text-left">
+                <p className="text-xs font-semibold text-white leading-none">{user.full_name.split(' ')[0]}</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">{ROLE_UZ[user.role] || user.role}</p>
               </div>
             </button>
 
-            {/* Dropdown Menu */}
-            {profileDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-[#121212] shadow-gold p-1 animate-in fade-in duration-200">
-                <div className="px-3 py-2.5 border-b border-white/5">
-                  <p className="text-sm font-semibold text-white truncate">{user.full_name}</p>
-                  <p className="text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
+            {profileOpen && (
+              <div
+                className="absolute right-0 mt-2 w-60 rounded-2xl overflow-hidden animate-scale-in z-50"
+                style={{ background: '#0e1420', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}
+              >
+                <div className="px-4 py-3.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <p className="text-sm font-semibold text-white">{user.full_name}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate">{user.email}</p>
                 </div>
-                <div className="p-1 space-y-0.5">
+                <div className="p-1.5 space-y-0.5">
                   <Link
                     to="/settings"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white transition-colors"
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <Settings size={16} className="text-gray-400" />
+                    <Settings size={15} className="text-slate-500" />
                     <span>Sozlamalar</span>
                   </Link>
                 </div>
-                <div className="p-1 border-t border-white/5">
+                <div className="p-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                   <button
-                    onClick={() => {
-                      setProfileDropdownOpen(false);
-                      onLogout();
-                    }}
-                    className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    onClick={() => { setProfileOpen(false); onLogout(); }}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm text-red-400 hover:text-red-300 transition-all"
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <LogOut size={16} />
+                    <LogOut size={15} />
                     <span>Chiqish</span>
                   </button>
                 </div>
