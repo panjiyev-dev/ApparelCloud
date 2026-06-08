@@ -19,6 +19,6 @@ jobs:
           script: |
             cd ~/ApparelCloud
             git pull origin main
-            docker-compose down
-            docker-compose up --build -d
+            docker compose down
+            docker compose up --build -d
             echo "Deploy muvaffaqiyatli!"
