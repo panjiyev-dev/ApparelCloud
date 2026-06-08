@@ -87,7 +87,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             >
               👑
             </div>
-            <span className="text-lg font-bold tracking-wide text-white">cladue</span>
+            <span className="text-lg font-bold tracking-wide text-white">ApparelCloud</span>
           </div>
 
           {/* Headline */}
@@ -127,7 +127,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             style={{ background: 'rgba(14,20,32,0.6)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(16px)' }}
           >
             <p className="text-slate-300 text-sm italic leading-relaxed">
-              "sardor bizning ulgurji operatsiyalarimizni butunlay o'zgartirdi — buyurtmalarni kuzatish endi bir lahzalik ish."
+              "ApparelCloud bizning ulgurji operatsiyalarimizni butunlay o'zgartirdi — buyurtmalarni kuzatish endi bir lahzalik ish."
             </p>
             <div className="mt-3 flex items-center gap-2.5">
               <div
