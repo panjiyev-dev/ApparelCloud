@@ -26,7 +26,7 @@ services:
       SECRET_KEY: e8f96bc8e6cd7c0e5a95b871c504bd9feab8d7c67bf309adbd500473a216db8c
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 120
-      CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+      CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,https://crm.study-track.uz"
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,6 +39,17 @@ services:
       - VITE_API_URL=https://crm.study-track.uz
     depends_on:
       - backend
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: always
 
 volumes:
   postgres_data:
