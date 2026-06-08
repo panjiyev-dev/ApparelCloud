@@ -84,7 +84,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, user, onLogout }) => {
             to="/"
             className="text-slate-500 hover:text-slate-300 font-medium transition-colors whitespace-nowrap"
           >
-            ApparelCloud
+            sar
           </Link>
           {pathnames.map((seg, idx) => {
             const isLast = idx === pathnames.length - 1;
