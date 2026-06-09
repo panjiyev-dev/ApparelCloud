@@ -89,7 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, user, onLogout }) 
               👑
             </div>
             <div>
-              <p className="text-sm font-bold text-white leading-none">ApparelCloud - 1 - 1</p>
+              <p className="text-sm font-bold text-white leading-none">ApparelCloud - 1 -  1 - 1</p>
               <p className="text-[9px] text-slate-500 font-medium tracking-wider uppercase mt-0.5">ERP · CRM · WMS</p>
             </div>
           </div>
