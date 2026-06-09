@@ -3,6 +3,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+ARG VITE_API_URL=https://crm.study-track.uz
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build || npx vite build
 
 FROM nginx:alpine
