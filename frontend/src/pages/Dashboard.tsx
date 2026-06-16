@@ -12,7 +12,7 @@ const getGreeting = () => {
   const h = new Date().getHours();
   if (h < 6)  return 'Yaxshi tun';
   if (h < 12) return 'Xayrli tong';
-  if (h < 17) return 'Xayrli kun';
+  if (h < 17) return 'Xayrli kun test';
   if (h < 21) return 'Xayrli kech';
   return 'Yaxshi oqshom';
 };
